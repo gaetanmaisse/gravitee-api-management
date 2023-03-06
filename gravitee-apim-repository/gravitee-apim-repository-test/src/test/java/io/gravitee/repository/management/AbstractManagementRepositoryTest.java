@@ -48,6 +48,9 @@ public abstract class AbstractManagementRepositoryTest extends AbstractRepositor
     protected EventRepository eventRepository;
 
     @Inject
+    protected EventLatestRepository eventLatestRepository;
+
+    @Inject
     protected CategoryRepository categoryRepository;
 
     @Inject
