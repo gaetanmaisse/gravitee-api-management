@@ -16,6 +16,8 @@
 package io.gravitee.repository.bridge.client.management;
 
 import io.gravitee.common.data.domain.Page;
+import io.gravitee.common.http.HttpStatusCode;
+import io.gravitee.repository.bridge.client.http.HttpResponse;
 import io.gravitee.repository.bridge.client.utils.BodyCodecs;
 import io.gravitee.repository.bridge.client.utils.ExcludeMethodFromGeneratedCoverage;
 import io.gravitee.repository.exceptions.TechnicalException;
@@ -50,14 +52,24 @@ public class HttpEventLatestRepository extends AbstractRepository implements Eve
     @Override
     public List<Event> search(EventCriteria criteria, Event.EventProperties group, Long page, Long size) {
         try {
-            return blockingGet(
+            HttpResponse<List<Event>> httpResponse = blockingGet(
                 post("/eventsLatest/_search", BodyCodecs.list(Event.class))
                     .addQueryParam("group", group.name())
                     .addQueryParam("page", Long.toString(page))
                     .addQueryParam("size", Long.toString(size))
                     .send(criteria)
-            )
-                .payload();
+            );
+            if (httpResponse.statusCode() == HttpStatusCode.NOT_FOUND_404) {
+                httpResponse =
+                    blockingGet(
+                        post("/events/_searchLatest", BodyCodecs.list(Event.class))
+                            .addQueryParam("group", group.name())
+                            .addQueryParam("page", Long.toString(page))
+                            .addQueryParam("size", Long.toString(size))
+                            .send(criteria)
+                    );
+            }
+            return httpResponse.payload();
         } catch (TechnicalException te) {
             throw new IllegalStateException(te);
         }

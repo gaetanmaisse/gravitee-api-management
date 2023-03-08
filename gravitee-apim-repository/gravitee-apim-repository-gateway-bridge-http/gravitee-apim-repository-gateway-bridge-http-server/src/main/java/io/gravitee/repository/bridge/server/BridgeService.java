@@ -161,6 +161,7 @@ public class BridgeService extends AbstractService {
             EventsLatestHandler eventsLatestHandler = new EventsLatestHandler(bridgeWorkerExecutor);
             applicationContext.getAutowireCapableBeanFactory().autowireBean(eventsLatestHandler);
             bridgeRouter.post("/eventsLatest/_search").handler(eventsLatestHandler::search);
+            bridgeRouter.post("/events/_searchLatest").handler(eventsLatestHandler::search);
             bridgeRouter.post("/eventsLatest/_createOrPatch").handler(eventsLatestHandler::createOrPatch);
 
             // Dictionaries handler
