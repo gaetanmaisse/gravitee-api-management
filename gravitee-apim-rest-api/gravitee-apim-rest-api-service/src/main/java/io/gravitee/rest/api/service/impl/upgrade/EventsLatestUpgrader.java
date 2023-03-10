@@ -22,12 +22,14 @@ import io.gravitee.repository.management.api.DictionaryRepository;
 import io.gravitee.repository.management.api.EventLatestRepository;
 import io.gravitee.repository.management.api.EventRepository;
 import io.gravitee.repository.management.api.OrganizationRepository;
+import io.gravitee.repository.management.api.search.ApiCriteria;
 import io.gravitee.repository.management.api.search.EventCriteria;
 import io.gravitee.repository.management.api.search.builder.PageableBuilder;
 import io.gravitee.repository.management.model.Dictionary;
 import io.gravitee.repository.management.model.Event;
 import io.gravitee.repository.management.model.Organization;
 import io.gravitee.rest.api.service.InstallationService;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,12 +46,14 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class EventsLatestUpgrader extends OneShotUpgrader {
 
-    private static final int BULK_SIZE = 2;
+    private static final int BULK_SIZE = 100;
     private final ApiRepository apiRepository;
     private final DictionaryRepository dictionaryRepository;
     private final OrganizationRepository organizationRepository;
     private final EventRepository eventRepository;
     private final EventLatestRepository eventLatestRepository;
+    private int modelCounter;
+    private int eventsForModelCounter;
 
     @Autowired
     public EventsLatestUpgrader(
@@ -69,7 +73,7 @@ public class EventsLatestUpgrader extends OneShotUpgrader {
 
     @Override
     public int getOrder() {
-        return 502;
+        return 600;
     }
 
     @Override
@@ -81,47 +85,72 @@ public class EventsLatestUpgrader extends OneShotUpgrader {
 
     private void migrateApiEvents() throws TechnicalException {
         log.info("Starting migrating latest event for APIs");
+        modelCounter = 0;
+        eventsForModelCounter = 0;
+        List<ApiCriteria> emptyCriteria = List.of();
         Page<String> firstPage =
-            this.apiRepository.searchIds(List.of(), new PageableBuilder().pageNumber(0).pageSize(BULK_SIZE).build(), null);
-        migrateEvents(Event.EventProperties.API_ID.getValue(), firstPage.getContent());
+            this.apiRepository.searchIds(emptyCriteria, new PageableBuilder().pageNumber(0).pageSize(BULK_SIZE).build(), null);
+        if (firstPage != null && firstPage.getContent() != null) {
+            migrateEvents(Event.EventProperties.API_ID.getValue(), firstPage.getContent());
 
-        // Cover others pages if required
-        if (firstPage.getTotalElements() > 0) {
-            long pageNumber = (int) Math.ceil((double) firstPage.getTotalElements() / BULK_SIZE);
-            for (int pageIdx = 0; pageIdx < pageNumber; pageIdx++) {
-                Page<String> nextPage =
-                    this.apiRepository.searchIds(List.of(), new PageableBuilder().pageNumber(pageIdx).pageSize(BULK_SIZE).build(), null);
-                migrateEvents(Event.EventProperties.API_ID.getValue(), nextPage.getContent());
+            // Cover others pages if required
+            if (firstPage.getTotalElements() > firstPage.getPageElements()) {
+                long pageNumber = (int) Math.ceil((double) firstPage.getTotalElements() / BULK_SIZE);
+                for (int pageIdx = 1; pageIdx < pageNumber; pageIdx++) {
+                    Page<String> nextPage =
+                        this.apiRepository.searchIds(
+                                emptyCriteria,
+                                new PageableBuilder().pageNumber(pageIdx).pageSize(BULK_SIZE).build(),
+                                null
+                            );
+                    migrateEvents(Event.EventProperties.API_ID.getValue(), nextPage.getContent());
+                }
             }
         }
+        log.info("{} events regarding {} APIs have been migrated", eventsForModelCounter, modelCounter);
     }
 
     private void migrateDictionaryEvents() throws TechnicalException {
         log.info("Starting migrating latest event for dictionaries");
+        modelCounter = 0;
+        eventsForModelCounter = 0;
         Set<Dictionary> dictionaries = this.dictionaryRepository.findAll();
-        List<String> ids = dictionaries.stream().map(Dictionary::getId).collect(Collectors.toList());
-        migrateEvents(Event.EventProperties.DICTIONARY_ID.getValue(), ids);
+        if (dictionaries != null) {
+            List<String> ids = dictionaries.stream().map(Dictionary::getId).collect(Collectors.toList());
+            migrateEvents(Event.EventProperties.DICTIONARY_ID.getValue(), ids);
+        }
+        log.info("{} events regarding {} dictionaries have been migrated", eventsForModelCounter, modelCounter);
     }
 
     private void migrateOrganizationEvents() throws TechnicalException {
         log.info("Starting migrating latest event for organizations");
+        modelCounter = 0;
+        eventsForModelCounter = 0;
         Set<Organization> organizations = this.organizationRepository.findAll();
-        List<String> ids = organizations.stream().map(Organization::getId).collect(Collectors.toList());
-        migrateEvents(Event.EventProperties.ORGANIZATION_ID.getValue(), ids);
+        if (organizations != null) {
+            List<String> ids = organizations.stream().map(Organization::getId).collect(Collectors.toList());
+            migrateEvents(Event.EventProperties.ORGANIZATION_ID.getValue(), ids);
+        }
+        log.info("{} events regarding {} organizations have been migrated", eventsForModelCounter, modelCounter);
     }
 
     private void migrateEvents(final String propertyId, final List<String> ids) throws TechnicalException {
         for (String id : ids) {
+            modelCounter++;
             Page<Event> search =
                 this.eventRepository.search(
-                        new EventCriteria.Builder().property(propertyId, id).build(),
+                        EventCriteria.builder().property(propertyId, id).build(),
                         new PageableBuilder().pageNumber(0).pageSize(1).build()
                     );
             if (search.getPageElements() > 0) {
                 Event event = search.getContent().get(0);
+                if (event.getProperties() == null) {
+                    event.setProperties(new HashMap<>());
+                }
                 event.getProperties().put(Event.EventProperties.ID.getValue(), event.getId());
                 event.setId(id);
                 this.eventLatestRepository.createOrPatch(event);
+                eventsForModelCounter++;
             }
         }
     }

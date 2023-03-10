@@ -76,7 +76,7 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
     @Test
     public void searchNoResults() {
         Page<Event> eventPage = eventRepository.search(
-            new EventCriteria.Builder().from(1420070400000L).to(1422748800000L).types(EventType.START_API).build(),
+            EventCriteria.builder().from(1420070400000L).to(1422748800000L).type(EventType.START_API).build(),
             new PageableBuilder().pageNumber(0).pageSize(10).build()
         );
 
@@ -86,7 +86,7 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
     @Test
     public void searchBySingleEventType() throws Exception {
         Page<Event> eventPage = eventRepository.search(
-            new EventCriteria.Builder().from(1451606400000L).to(1470157767000L).types(EventType.START_API).build(),
+            EventCriteria.builder().from(1451606400000L).to(1470157767000L).type(EventType.START_API).build(),
             new PageableBuilder().pageNumber(0).pageSize(10).build()
         );
         assertEquals(5L, eventPage.getTotalElements());
@@ -96,10 +96,11 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
 
     @Test
     public void searchByMultipleEventType() throws Exception {
-        final EventCriteria eventCriteria = new EventCriteria.Builder()
+        final EventCriteria eventCriteria = EventCriteria
+            .builder()
             .from(1451606400000L)
             .to(1470157767000L)
-            .types(EventType.START_API, EventType.STOP_API)
+            .types(Set.of(EventType.START_API, EventType.STOP_API))
             .build();
 
         Page<Event> eventPage = eventRepository.search(eventCriteria, new PageableBuilder().pageNumber(0).pageSize(2).build());
@@ -120,7 +121,7 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
     @Test
     public void searchByMissingType() throws Exception {
         Page<Event> eventPage = eventRepository.search(
-            new EventCriteria.Builder().types(EventType.GATEWAY_STARTED).build(),
+            EventCriteria.builder().type(EventType.GATEWAY_STARTED).build(),
             new PageableBuilder().pageNumber(0).pageSize(10).build()
         );
 
@@ -131,7 +132,8 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
     @Test
     public void searchByAPIId() throws Exception {
         Page<Event> eventPage = eventRepository.search(
-            new EventCriteria.Builder()
+            EventCriteria
+                .builder()
                 .from(1451606400000L)
                 .to(1470157767000L)
                 .property(Event.EventProperties.API_ID.getValue(), "api-1")
@@ -147,7 +149,8 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
     @Test
     public void searchByAPI_EmptyPageable() throws Exception {
         Page<Event> eventPage = eventRepository.search(
-            new EventCriteria.Builder()
+            EventCriteria
+                .builder()
                 .from(1451606400000L)
                 .to(1470157767000L)
                 .property(Event.EventProperties.API_ID.getValue(), "api-1")
@@ -163,11 +166,12 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
     @Test
     public void searchByMixProperties() throws Exception {
         Page<Event> eventPage = eventRepository.search(
-            new EventCriteria.Builder()
+            EventCriteria
+                .builder()
                 .from(1451606400000L)
                 .to(1470157767000L)
                 .property(Event.EventProperties.API_ID.getValue(), "api-3")
-                .types(EventType.START_API, EventType.STOP_API)
+                .types(Set.of(EventType.START_API, EventType.STOP_API))
                 .build(),
             new PageableBuilder().pageNumber(0).pageSize(10).build()
         );
@@ -180,7 +184,8 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
     @Test
     public void searchByCollectionProperty() throws Exception {
         Page<Event> eventPage = eventRepository.search(
-            new EventCriteria.Builder()
+            EventCriteria
+                .builder()
                 .from(1451606400000L)
                 .to(1470157767000L)
                 .property(Event.EventProperties.API_ID.getValue(), Arrays.asList("api-1", "api-3"))
@@ -196,7 +201,8 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
     @Test
     public void searchByCollectionPropertyWithoutPaging() throws Exception {
         List<Event> events = eventRepository.search(
-            new EventCriteria.Builder()
+            EventCriteria
+                .builder()
                 .from(1452606400000L)
                 .to(1470157767000L)
                 .property(Event.EventProperties.API_ID.getValue(), Arrays.asList("api-1", "api-3"))
@@ -211,7 +217,7 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
     @Test
     public void searchByCollectionPropertyWithoutPagingAndBoundary() throws Exception {
         List<Event> events = eventRepository.search(
-            new EventCriteria.Builder().property(Event.EventProperties.API_ID.getValue(), Arrays.asList("api-1", "api-3")).build()
+            EventCriteria.builder().property(Event.EventProperties.API_ID.getValue(), Arrays.asList("api-1", "api-3")).build()
         );
 
         assertEquals(3L, events.size());
@@ -223,7 +229,7 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
 
     @Test
     public void searchByEnvironmentDefault() throws Exception {
-        List<Event> events = eventRepository.search(new EventCriteria.Builder().environments(singletonList("DEFAULT")).build());
+        List<Event> events = eventRepository.search(EventCriteria.builder().environments(singletonList("DEFAULT")).build());
 
         assertEquals(8L, events.size());
         final Iterator<Event> iterator = events.iterator();
@@ -239,9 +245,7 @@ public class EventRepositoryTest extends AbstractManagementRepositoryTest {
 
     @Test
     public void searchByEnvironmentsAll() throws Exception {
-        List<Event> events = eventRepository.search(
-            new EventCriteria.Builder().environments(Arrays.asList("DEFAULT", "OTHER_ENV")).build()
-        );
+        List<Event> events = eventRepository.search(EventCriteria.builder().environments(Arrays.asList("DEFAULT", "OTHER_ENV")).build());
 
         assertEquals(9, events.size());
         final Iterator<Event> iterator = events.iterator();
