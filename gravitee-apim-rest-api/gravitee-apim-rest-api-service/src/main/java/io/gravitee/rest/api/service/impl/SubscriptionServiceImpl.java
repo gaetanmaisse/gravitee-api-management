@@ -15,27 +15,8 @@
  */
 package io.gravitee.rest.api.service.impl;
 
-import static io.gravitee.repository.management.model.Audit.AuditProperties.API;
-import static io.gravitee.repository.management.model.Audit.AuditProperties.APPLICATION;
-import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_CLOSED;
-import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_CREATED;
-import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_DELETED;
-import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_PAUSED;
-import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_PAUSED_BY_CONSUMER;
-import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_RESUMED;
-import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_RESUMED_BY_CONSUMER;
-import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_UPDATED;
-import static io.gravitee.repository.management.model.Subscription.Status.PENDING;
-import static io.gravitee.rest.api.model.ApiKeyMode.EXCLUSIVE;
-import static io.gravitee.rest.api.model.ApiKeyMode.UNSPECIFIED;
-import static io.gravitee.rest.api.model.v4.plan.PlanValidationType.MANUAL;
-import static java.lang.System.lineSeparator;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
-
 import io.gravitee.common.data.domain.Page;
+import io.gravitee.common.event.EventManager;
 import io.gravitee.definition.model.DefinitionVersion;
 import io.gravitee.definition.model.v4.listener.ListenerType;
 import io.gravitee.definition.model.v4.plan.PlanSecurity;
@@ -89,6 +70,7 @@ import io.gravitee.rest.api.service.UserService;
 import io.gravitee.rest.api.service.common.ExecutionContext;
 import io.gravitee.rest.api.service.common.UuidString;
 import io.gravitee.rest.api.service.converter.ApplicationConverter;
+import io.gravitee.rest.api.service.event.SubscriptionEvent;
 import io.gravitee.rest.api.service.exceptions.ApplicationArchivedException;
 import io.gravitee.rest.api.service.exceptions.PlanAlreadyClosedException;
 import io.gravitee.rest.api.service.exceptions.PlanAlreadySubscribedException;
@@ -119,6 +101,14 @@ import io.gravitee.rest.api.service.v4.ApiSearchService;
 import io.gravitee.rest.api.service.v4.ApiTemplateService;
 import io.gravitee.rest.api.service.v4.PlanSearchService;
 import io.gravitee.rest.api.service.v4.validation.SubscriptionValidationService;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -130,13 +120,26 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
+
+import static io.gravitee.repository.management.model.Audit.AuditProperties.API;
+import static io.gravitee.repository.management.model.Audit.AuditProperties.APPLICATION;
+import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_CLOSED;
+import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_CREATED;
+import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_DELETED;
+import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_PAUSED;
+import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_PAUSED_BY_CONSUMER;
+import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_RESUMED;
+import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_RESUMED_BY_CONSUMER;
+import static io.gravitee.repository.management.model.Subscription.AuditEvent.SUBSCRIPTION_UPDATED;
+import static io.gravitee.repository.management.model.Subscription.Status.PENDING;
+import static io.gravitee.rest.api.model.ApiKeyMode.EXCLUSIVE;
+import static io.gravitee.rest.api.model.ApiKeyMode.UNSPECIFIED;
+import static io.gravitee.rest.api.model.v4.plan.PlanValidationType.MANUAL;
+import static java.lang.System.lineSeparator;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
@@ -199,6 +202,9 @@ public class SubscriptionServiceImpl extends AbstractService implements Subscrip
 
     @Autowired
     private SubscriptionValidationService subscriptionValidationService;
+
+    @Autowired
+    private EventManager eventManager;
 
     @Override
     public SubscriptionEntity findById(String subscriptionId) {
@@ -828,6 +834,8 @@ public class SubscriptionServiceImpl extends AbstractService implements Subscrip
                         }
                     );
             }
+
+            eventManager.publishEvent(SubscriptionEvent.PROCESSED, subscriptionEntity);
 
             return subscriptionEntity;
         } catch (TechnicalException ex) {
