@@ -53,6 +53,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.PropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import io.gravitee.common.component.Lifecycle;
+import io.gravitee.common.event.EventManager;
 import io.gravitee.definition.jackson.datatype.GraviteeMapper;
 import io.gravitee.definition.model.DefinitionVersion;
 import io.gravitee.definition.model.Endpoint;
@@ -235,6 +236,9 @@ public class ApiService_UpdateTest {
 
     @Mock
     private RoleService roleService;
+
+    @Mock
+    private EventManager eventManager;
 
     @Spy
     private ObjectMapper objectMapper = new GraviteeMapper();

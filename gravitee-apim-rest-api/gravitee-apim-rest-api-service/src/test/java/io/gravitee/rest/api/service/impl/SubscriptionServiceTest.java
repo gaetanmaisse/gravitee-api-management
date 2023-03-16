@@ -49,6 +49,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.gravitee.common.data.domain.Page;
+import io.gravitee.common.event.EventManager;
 import io.gravitee.definition.model.DefinitionVersion;
 import io.gravitee.definition.model.v4.listener.subscription.SubscriptionListener;
 import io.gravitee.definition.model.v4.plan.PlanSecurity;
@@ -228,6 +229,9 @@ public class SubscriptionServiceTest {
 
     @Mock
     private PlanEntity planEntity;
+
+    @Mock
+    private EventManager eventManager;
 
     @AfterClass
     public static void cleanSecurityContextHolder() {
