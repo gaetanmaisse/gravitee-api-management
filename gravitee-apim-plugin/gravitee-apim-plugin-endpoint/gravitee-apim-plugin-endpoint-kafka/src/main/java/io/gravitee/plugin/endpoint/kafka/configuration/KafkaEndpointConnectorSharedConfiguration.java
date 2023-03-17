@@ -15,8 +15,10 @@
  */
 package io.gravitee.plugin.endpoint.kafka.configuration;
 
-import io.gravitee.gateway.reactive.api.connector.endpoint.EndpointConnectorConfiguration;
+import io.gravitee.gateway.reactive.api.connector.endpoint.EndpointConnectorSharedConfiguration;
+import java.util.Set;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -31,7 +33,32 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @Setter
 @SuperBuilder
-public class KafkaEndpointConnectorConfiguration implements EndpointConnectorConfiguration {
+public class KafkaEndpointConnectorSharedConfiguration implements EndpointConnectorSharedConfiguration {
 
-    private String bootstrapServers;
+    private Consumer consumer = new Consumer();
+    private Producer producer = new Producer();
+
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Getter
+    @Setter
+    @Builder
+    public static class Consumer {
+
+        private boolean enabled = true;
+        private boolean encodeMessageId = true;
+        private String autoOffsetReset = "latest";
+        private Set<String> topics;
+    }
+
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Getter
+    @Setter
+    @Builder
+    public static class Producer {
+
+        private boolean enabled = true;
+        private Set<String> topics;
+    }
 }
