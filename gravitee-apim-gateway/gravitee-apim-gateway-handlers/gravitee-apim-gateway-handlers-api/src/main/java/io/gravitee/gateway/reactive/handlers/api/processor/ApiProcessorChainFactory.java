@@ -95,6 +95,11 @@ public class ApiProcessorChainFactory {
 
         preProcessorList.add(SubscriptionProcessor.instance(clientIdentifierHeader));
 
+        Map<String, Pattern> pathMappings = api.getDefinition().getPathMappings();
+        if (pathMappings != null && !pathMappings.isEmpty()) {
+            preProcessorList.add(PathMappingProcessor.instance());
+        }
+
         ProcessorChain processorChain = new ProcessorChain("processor-chain-before-api-execution", preProcessorList);
         processorChain.addHooks(processorHooks);
         return processorChain;
@@ -117,11 +122,6 @@ public class ApiProcessorChainFactory {
         if (cors != null && cors.isEnabled()) {
             postProcessorList.add(CorsSimpleRequestProcessor.instance());
         }
-        Map<String, Pattern> pathMappings = api.getDefinition().getPathMappings();
-        if (pathMappings != null && !pathMappings.isEmpty()) {
-            postProcessorList.add(PathMappingProcessor.instance());
-        }
-
         return postProcessorList;
     }
 

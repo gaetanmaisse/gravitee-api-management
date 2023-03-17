@@ -16,11 +16,10 @@
 package io.gravitee.gateway.reactive.handlers.api.processor.pathmapping;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import io.gravitee.common.util.LinkedMultiValueMap;
 import io.gravitee.gateway.reactive.handlers.api.processor.AbstractProcessorTest;
-import io.gravitee.reporter.api.v4.log.Log;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +37,7 @@ class PathMappingProcessorTest extends AbstractProcessorTest {
     @BeforeEach
     public void beforeEach() {
         lenient().when(mockRequest.pathInfo()).thenReturn(PATH_INFO);
+        lenient().when(mockRequest.pathParameters()).thenReturn(new LinkedMultiValueMap<>());
         pathMappingProcessor = PathMappingProcessor.instance();
     }
 
@@ -70,5 +70,15 @@ class PathMappingProcessorTest extends AbstractProcessorTest {
         api.setPathMappings(Map.of(PATH_INFO, Pattern.compile("/path/.*/info/")));
         pathMappingProcessor.execute(spyCtx).test().assertResult();
         verify(spyCtx, never()).metrics();
+    }
+
+    @Test
+    public void shouldAddPathParametersWithMapping() {
+        lenient().when(mockRequest.pathInfo()).thenReturn("/path/path-12/info/info-13");
+        api.setPathMappings(Map.of("/path/:pathId/info/:infoId", Pattern.compile("/path/.*/info/.*")));
+        pathMappingProcessor.execute(spyCtx).test().assertResult();
+
+        assertThat(spyCtx.request().pathParameters().get("pathId").get(0)).isEqualTo("path-12");
+        assertThat(spyCtx.request().pathParameters().get("infoId").get(0)).isEqualTo("info-13");
     }
 }

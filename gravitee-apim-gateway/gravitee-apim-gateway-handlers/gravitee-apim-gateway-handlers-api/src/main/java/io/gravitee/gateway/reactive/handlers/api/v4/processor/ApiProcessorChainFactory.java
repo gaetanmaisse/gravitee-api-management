@@ -117,6 +117,11 @@ public class ApiProcessorChainFactory {
                     if (overrideXForwardedPrefix) {
                         processors.add(XForwardedPrefixProcessor.instance());
                     }
+
+                    final Map<String, Pattern> pathMappings = httpListener.getPathMappingsPattern();
+                    if (pathMappings != null && !pathMappings.isEmpty()) {
+                        processors.add(PathMappingProcessor.instance());
+                    }
                 });
 
             processors.add(SubscriptionProcessor.instance(clientIdentifierHeader));
@@ -148,11 +153,6 @@ public class ApiProcessorChainFactory {
                 final Cors cors = httpListener.getCors();
                 if (cors != null && cors.isEnabled()) {
                     processors.add(CorsSimpleRequestProcessor.instance());
-                }
-
-                final Map<String, Pattern> pathMappings = httpListener.getPathMappingsPattern();
-                if (pathMappings != null && !pathMappings.isEmpty()) {
-                    processors.add(PathMappingProcessor.instance());
                 }
             });
         return processors;

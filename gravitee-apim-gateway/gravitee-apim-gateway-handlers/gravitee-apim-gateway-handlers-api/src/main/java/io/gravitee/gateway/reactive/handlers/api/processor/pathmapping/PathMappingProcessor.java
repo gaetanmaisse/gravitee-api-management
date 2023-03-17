@@ -19,6 +19,7 @@ import static java.util.Comparator.comparing;
 
 import io.gravitee.definition.model.v4.listener.ListenerType;
 import io.gravitee.definition.model.v4.listener.http.HttpListener;
+import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.reactive.core.context.MutableExecutionContext;
 import io.gravitee.gateway.reactive.core.processor.Processor;
 import io.reactivex.rxjava3.core.Completable;
@@ -32,6 +33,8 @@ import java.util.regex.Pattern;
  */
 public class PathMappingProcessor implements Processor {
 
+    private static final String PATH_PARAM_PREFIX = ":";
+    private static final String URL_PATH_SEPARATOR = "/";
     public static final String ID = "processor-path-mapping";
 
     private PathMappingProcessor() {}
@@ -60,7 +63,7 @@ public class PathMappingProcessor implements Processor {
                 .filter(regexMappedPath -> regexMappedPath.getValue().matcher(finalPath).matches())
                 .map(Map.Entry::getKey)
                 .min(comparing(this::countOccurrencesOf))
-                .ifPresent(resolvedMappedPath -> ctx.metrics().setMappedPath(resolvedMappedPath));
+                .ifPresent(resolvedMappedPath -> fillMappedPathAndPathParameters(ctx, resolvedMappedPath, finalPath));
         });
     }
 
@@ -87,5 +90,18 @@ public class PathMappingProcessor implements Processor {
     private static class Holder {
 
         private static final PathMappingProcessor INSTANCE = new PathMappingProcessor();
+    }
+
+    private void fillMappedPathAndPathParameters(MutableExecutionContext result, String resolvedMappedPath, String finalPath) {
+        result.metrics().setMappedPath(resolvedMappedPath);
+
+        String[] resolvedMappedPathSplit = resolvedMappedPath.substring(1).split(URL_PATH_SEPARATOR);
+        String[] finalPathSplit = finalPath.substring(1).split(URL_PATH_SEPARATOR);
+
+        for (int i = 0; i < resolvedMappedPathSplit.length; i++) {
+            if (resolvedMappedPathSplit[i].startsWith(PATH_PARAM_PREFIX)) {
+                result.request().pathParameters().add(resolvedMappedPathSplit[i].substring(1), finalPathSplit[i]);
+            }
+        }
     }
 }
