@@ -37,6 +37,7 @@ import io.gravitee.gateway.reactive.api.context.Response;
 import io.gravitee.plugin.endpoint.http.proxy.client.GrpcHttpClientFactory;
 import io.gravitee.plugin.endpoint.http.proxy.client.HttpClientFactory;
 import io.gravitee.plugin.endpoint.http.proxy.configuration.HttpProxyEndpointConnectorConfiguration;
+import io.gravitee.plugin.endpoint.http.proxy.configuration.HttpProxyEndpointConnectorSharedConfiguration;
 import io.gravitee.plugin.endpoint.http.proxy.connector.ProxyConnector;
 import io.gravitee.reporter.api.v4.metric.Metrics;
 import io.reactivex.rxjava3.core.Completable;
@@ -89,6 +90,7 @@ class HttpProxyEndpointConnectorTest {
     private HttpHeaders requestHeaders;
     private HttpHeaders responseHeaders;
     private HttpProxyEndpointConnectorConfiguration configuration;
+    private HttpProxyEndpointConnectorSharedConfiguration sharedConfiguration;
     private HttpProxyEndpointConnector cut;
 
     @BeforeEach
@@ -110,9 +112,10 @@ class HttpProxyEndpointConnectorTest {
         lenient().when(response.headers()).thenReturn(responseHeaders);
 
         configuration = new HttpProxyEndpointConnectorConfiguration();
+        sharedConfiguration = new HttpProxyEndpointConnectorSharedConfiguration();
 
         configuration.setTarget("http://localhost:8080/team");
-        cut = new HttpProxyEndpointConnector(configuration);
+        cut = new HttpProxyEndpointConnector(configuration, sharedConfiguration);
     }
 
     @Test
