@@ -46,7 +46,6 @@ import io.gravitee.rest.api.service.common.GraviteeContext;
 import io.gravitee.rest.api.service.v4.EndpointConnectorPluginService;
 import io.gravitee.rest.api.service.v4.EntrypointConnectorPluginService;
 import io.gravitee.rest.api.service.v4.exception.*;
-import io.gravitee.rest.api.service.v4.validation.AnalyticsValidationService;
 import io.gravitee.rest.api.service.v4.validation.CorsValidationService;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,7 +86,9 @@ public class ListenerValidationServiceImplTest {
     @Before
     public void setUp() throws Exception {
         when(environmentService.findById(any())).thenReturn(new EnvironmentEntity());
-        lenient().when(entrypointService.validateConnectorConfiguration(any(), any())).thenAnswer(invocation -> invocation.getArgument(1));
+        lenient()
+            .when(entrypointService.validateConnectorConfiguration(any(String.class), any()))
+            .thenAnswer(invocation -> invocation.getArgument(1));
         listenerValidationService =
             new ListenerValidationServiceImpl(
                 new PathValidationServiceImpl(apiRepository, objectMapper, environmentService),
