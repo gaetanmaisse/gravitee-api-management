@@ -18,8 +18,12 @@ module.exports = {
 
     // First remove some rules we don't want anymore
     const filteredDefaultRules = config.module.rules.filter(
-      (rule) => rule.test.toString() !== /\.html$/.toString() && rule.test.toString() !== /\.s(c|a)ss$/.toString(),
+    (rule) => rule.test.toString() !== /\.html$/.toString() && rule.test.toString() !== /\.s(c|a)ss$/.toString() && rule.type !== 'asset/source',
     );
+    console.log(filteredDefaultRules);
+    console.log(filteredDefaultRules[7].rules[0].type)
+    console.log(filteredDefaultRules[7].rules[1])
+    console.log(filteredDefaultRules[7].rules[1].type)
     config.module.rules = [
       ...filteredDefaultRules,
       {

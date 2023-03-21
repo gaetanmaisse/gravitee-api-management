@@ -18,7 +18,8 @@
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
     "checkJs": false,
-    "module": "es2020"
+    "module": "es2020",
+    "baseUrl": "."
   },
   "include": ["src/**/*.ts", "node_modules/@gravitee/ui-components"]
 }
