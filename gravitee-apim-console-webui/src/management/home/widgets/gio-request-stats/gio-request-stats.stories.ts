@@ -33,13 +33,21 @@ export default {
 
 export const Simple: Story = {
   render: () => {
+    const input = {
+      min: 0.02336,
+      max: 23009.29032,
+      avg: 8.4323,
+      rps: 1.2012334,
+      total: 332981092,
+    };
+
     return {
       template: `
       <mat-card style="width: 500px">
-          <gio-request-stats></gio-request-stats>
+          <gio-request-stats [source]="source"></gio-request-stats>
       </mat-card>
       `,
-      props: {},
+      props: { source: input },
       styles: [],
     };
   },

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 
 export interface RequestStatsSource {
   min: number;
@@ -29,15 +29,28 @@ export interface RequestStatsSource {
   styles: [require('./gio-request-stats.component.scss')],
 })
 export class GioRequestStatsComponent implements OnInit {
+  @Input()
+  public source: RequestStatsSource;
+
   public data: RequestStatsSource;
 
   ngOnInit() {
-    this.data = {
-      min: 0.02,
-      max: 23009.29032,
-      avg: 8.4323,
-      rps: 1.2012334,
-      total: 332981092,
-    };
+    if (this.source) {
+      this.data = {
+        min: this.formatRequestTimeNumber(this.source.min),
+        max: this.formatRequestTimeNumber(this.source.max),
+        avg: this.formatRequestTimeNumber(this.source.avg),
+        rps: this.formatNumber(this.source.rps, 1),
+        total: this.formatNumber(this.source.total, 0),
+      };
+    }
+  }
+
+  formatRequestTimeNumber(num: number) {
+    return this.formatNumber(num, num < 1 ? 2 : 0);
+  }
+
+  formatNumber(num: number, decimalPlaces: number): number {
+    return num ? Number(num.toFixed(decimalPlaces)) : 0;
   }
 }
