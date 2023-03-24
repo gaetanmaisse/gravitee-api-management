@@ -531,6 +531,7 @@ import { ApiPortalMembersComponent } from './api/portal/user-group-access/member
 import SearchAndSelectComponent from '../components/search-and-select/search-and-select.component';
 import { SearchAndSelectController } from '../components/search-and-select/search-and-select.controller';
 import { ApiPortalTransferOwnershipComponent } from './api/portal/user-group-access/transfer-ownership/api-portal-transfer-ownership.component';
+import AlertTabsController from '../components/alerts/alertTabs/alert-tabs-component';
 
 (<any>window).moment = moment;
 require('angular-moment-picker');
@@ -1035,6 +1036,7 @@ graviteeManagementModule.service('ClientRegistrationProviderService', ClientRegi
 
 // Alerts
 graviteeManagementModule.service('AlertService', AlertService);
+graviteeManagementModule.controller('AlertTabsController', AlertTabsController);
 graviteeManagementModule.component('alertsComponent', AlertsComponent);
 graviteeManagementModule.component('alertComponent', AlertComponent);
 graviteeManagementModule.component('gvAlertNotification', AlertNotificationComponent);
